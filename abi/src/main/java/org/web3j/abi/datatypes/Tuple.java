@@ -52,7 +52,7 @@ public class Tuple implements Type<List<Type>> {
 
         Tuple type = (Tuple) o;
 
-        return value.equals(type.value) ;
+        return value.equals(type.value);
     }
 
     @Override

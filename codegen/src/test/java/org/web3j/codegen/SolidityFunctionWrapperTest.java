@@ -127,13 +127,20 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
 
     @Test
     public void testGetNativeType() {
-        assertEquals(getNativeType(TypeName.get(Address.class), null), (TypeName.get(String.class)));
-        assertEquals(getNativeType(TypeName.get(Uint256.class), null), (TypeName.get(BigInteger.class)));
-        assertEquals(getNativeType(TypeName.get(Int256.class), null), (TypeName.get(BigInteger.class)));
-        assertEquals(getNativeType(TypeName.get(Utf8String.class), null), (TypeName.get(String.class)));
+        assertEquals(
+                getNativeType(TypeName.get(Address.class), null), (TypeName.get(String.class)));
+        assertEquals(
+                getNativeType(TypeName.get(Uint256.class), null), (TypeName.get(BigInteger.class)));
+        assertEquals(
+                getNativeType(TypeName.get(Int256.class), null), (TypeName.get(BigInteger.class)));
+        assertEquals(
+                getNativeType(TypeName.get(Utf8String.class), null), (TypeName.get(String.class)));
         assertEquals(getNativeType(TypeName.get(Bool.class), null), (TypeName.get(Boolean.class)));
-        assertEquals(getNativeType(TypeName.get(Bytes32.class), null), (TypeName.get(byte[].class)));
-        assertEquals(getNativeType(TypeName.get(DynamicBytes.class), null), (TypeName.get(byte[].class)));
+        assertEquals(
+                getNativeType(TypeName.get(Bytes32.class), null), (TypeName.get(byte[].class)));
+        assertEquals(
+                getNativeType(TypeName.get(DynamicBytes.class), null),
+                (TypeName.get(byte[].class)));
     }
 
     @Test
@@ -156,7 +163,8 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
     @Test
     public void testGetEventNativeType() {
         assertEquals(
-                getEventNativeType(TypeName.get(Utf8String.class), null), (TypeName.get(byte[].class)));
+                getEventNativeType(TypeName.get(Utf8String.class), null),
+                (TypeName.get(byte[].class)));
     }
 
     @Test
@@ -164,7 +172,8 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
         assertEquals(
                 getEventNativeType(
                         ParameterizedTypeName.get(
-                                ClassName.get(DynamicArray.class), TypeName.get(Address.class)), null),
+                                ClassName.get(DynamicArray.class), TypeName.get(Address.class)),
+                        null),
                 (TypeName.get(byte[].class)));
     }
 
@@ -373,7 +382,8 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        List<MethodSpec> methodSpecs = solidityFunctionWrapper.buildFunctions(functionDefinition, null);
+        List<MethodSpec> methodSpecs =
+                solidityFunctionWrapper.buildFunctions(functionDefinition, null);
         assertTrue(methodSpecs.isEmpty());
     }
 
