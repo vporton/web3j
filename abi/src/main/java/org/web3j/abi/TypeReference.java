@@ -123,7 +123,7 @@ public abstract class TypeReference<T extends org.web3j.abi.datatypes.Type>
         if (ARRAY_SUFFIX.matcher(solidityType).find()) {
             throw new ClassNotFoundException(
                     "getAtomicTypeClass does not work with array types."
-                            + " See makeTypeReference()");
+                            + " See ()");
         } else {
             return AbiTypes.getType(solidityType, primitives);
         }

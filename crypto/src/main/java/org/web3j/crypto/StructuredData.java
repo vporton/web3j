@@ -14,6 +14,7 @@ package org.web3j.crypto;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Vector;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -25,13 +26,16 @@ public class StructuredData {
     static class Entry {
         private final String name;
         private final String type;
+        private final List<Entry> components;
 
         @JsonCreator
         public Entry(
                 @JsonProperty(value = "name") String name,
-                @JsonProperty(value = "type") String type) {
+                @JsonProperty(value = "type") String type,
+                @JsonProperty(value = "components") Vector<Entry> components) {
             this.name = name;
             this.type = type;
+            this.components = components;
         }
 
         public String getName() {
