@@ -329,7 +329,7 @@ public class SolidityFunctionWrapper extends Generator {
             if (functionDefinition.getType().equals(TYPE_FUNCTION)) {
                 String functionName = funcNameToConst(functionDefinition.getName(), true);
                 boolean useUpperCase = !duplicateFunctionNames.contains(functionName);
-                methodSpecs.addAll(buildFunctions(functionDefinition, useUpperCase));
+                methodSpecs.addAll(buildFunctions(functionDefinition, useUpperCase, classBuilder));
 
             } else if (functionDefinition.getType().equals(TYPE_EVENT)) {
                 methodSpecs.addAll(buildEventFunctions(functionDefinition, classBuilder));
@@ -370,28 +370,32 @@ public class SolidityFunctionWrapper extends Generator {
                                 functionDefinition,
                                 Credentials.class,
                                 CREDENTIALS,
-                                true));
+                                true,
+                                classBuilder));
                 methodSpecs.add(
                         buildDeploy(
                                 className,
                                 functionDefinition,
                                 TransactionManager.class,
                                 TRANSACTION_MANAGER,
-                                true));
+                                true,
+                                classBuilder));
                 methodSpecs.add(
                         buildDeploy(
                                 className,
                                 functionDefinition,
                                 Credentials.class,
                                 CREDENTIALS,
-                                false));
+                                false,
+                                classBuilder));
                 methodSpecs.add(
                         buildDeploy(
                                 className,
                                 functionDefinition,
                                 TransactionManager.class,
                                 TRANSACTION_MANAGER,
-                                false));
+                                false,
+                                classBuilder));
             }
         }
 
@@ -514,14 +518,15 @@ public class SolidityFunctionWrapper extends Generator {
             AbiDefinition functionDefinition,
             Class authType,
             String authName,
-            boolean withGasProvider)
+            boolean withGasProvider,
+            TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
 
         boolean isPayable = functionDefinition.isPayable();
 
         MethodSpec.Builder methodBuilder =
                 getDeployMethodSpec(className, authType, authName, isPayable, withGasProvider);
-        String inputParams = addParameters(methodBuilder, functionDefinition.getInputs());
+        String inputParams = addParameters(methodBuilder, functionDefinition.getInputs(), classBuilder);
 
         if (!inputParams.isEmpty()) {
             return buildDeployWithParams(
@@ -704,7 +709,7 @@ public class SolidityFunctionWrapper extends Generator {
         return toReturn.build();
     }
 
-    String addParameters(MethodSpec.Builder methodBuilder, List<AbiDefinition.NamedType> namedTypes)
+    String addParameters(MethodSpec.Builder methodBuilder, List<AbiDefinition.NamedType> namedTypes, TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
 
         final List<ParameterSpec> inputParameterTypes =
@@ -714,7 +719,7 @@ public class SolidityFunctionWrapper extends Generator {
                 new ArrayList<>(inputParameterTypes.size());
 
         for (ParameterSpec parameterSpec : inputParameterTypes) {
-            TypeName typeName = getWrapperType(parameterSpec.type);
+            TypeName typeName = getWrapperType(parameterSpec.type, classBuilder);
             nativeInputParameterTypes.add(
                     ParameterSpec.builder(typeName, parameterSpec.name).build());
         }
@@ -781,37 +786,37 @@ public class SolidityFunctionWrapper extends Generator {
         }
     }
 
-    private TypeName getWrapperType(TypeName typeName) {
+    private TypeName getWrapperType(TypeName typeName, TypeSpec.Builder classBuilder) {
         if (useNativeJavaTypes) {
-            return getNativeType(typeName);
+            return getNativeType(typeName, classBuilder);
         } else {
             return typeName;
         }
     }
 
-    private TypeName getWrapperRawType(TypeName typeName) {
+    private TypeName getWrapperRawType(TypeName typeName, TypeSpec.Builder classBuilder) {
         if (useNativeJavaTypes) {
             if (typeName instanceof ParameterizedTypeName) {
                 return ClassName.get(List.class);
             }
-            return getNativeType(typeName);
+            return getNativeType(typeName, classBuilder);
         } else {
             return typeName;
         }
     }
 
-    private TypeName getIndexedEventWrapperType(TypeName typeName) {
+    private TypeName getIndexedEventWrapperType(TypeName typeName, TypeSpec.Builder classBuilder) {
         if (useNativeJavaTypes) {
-            return getEventNativeType(typeName);
+            return getEventNativeType(typeName, classBuilder);
         } else {
             return typeName;
         }
     }
 
-    static TypeName getNativeType(TypeName typeName) {
+    static TypeName getNativeType(TypeName typeName, TypeSpec.Builder classBuilder) {
 
         if (typeName instanceof ParameterizedTypeName) {
-            return getNativeType((ParameterizedTypeName) typeName);
+            return getNativeType((ParameterizedTypeName) typeName, classBuilder);
         }
 
         String simpleName = ((ClassName) typeName).simpleName();
@@ -849,18 +854,18 @@ public class SolidityFunctionWrapper extends Generator {
         }
     }
 
-    static TypeName getNativeType(ParameterizedTypeName parameterizedTypeName) {
+    static TypeName getNativeType(ParameterizedTypeName parameterizedTypeName, TypeSpec.Builder classBuilder) {
         List<TypeName> typeNames = parameterizedTypeName.typeArguments;
         List<TypeName> nativeTypeNames = new ArrayList<>(typeNames.size());
         for (TypeName enclosedTypeName : typeNames) {
-            nativeTypeNames.add(getNativeType(enclosedTypeName));
+            nativeTypeNames.add(getNativeType(enclosedTypeName, classBuilder));
         }
         return ParameterizedTypeName.get(
                 ClassName.get(List.class),
                 nativeTypeNames.toArray(new TypeName[nativeTypeNames.size()]));
     }
 
-    static TypeName getEventNativeType(TypeName typeName) {
+    static TypeName getEventNativeType(TypeName typeName, TypeSpec.Builder classBuilder) {
         if (typeName instanceof ParameterizedTypeName) {
             return TypeName.get(byte[].class);
         }
@@ -869,7 +874,7 @@ public class SolidityFunctionWrapper extends Generator {
         if (simpleName.equals(Utf8String.class.getSimpleName())) {
             return TypeName.get(byte[].class);
         } else {
-            return getNativeType(typeName);
+            return getNativeType(typeName, classBuilder);
         }
     }
 
@@ -916,21 +921,21 @@ public class SolidityFunctionWrapper extends Generator {
         return result;
     }
 
-    MethodSpec buildFunction(AbiDefinition functionDefinition) throws ClassNotFoundException {
-        return buildFunction(functionDefinition, true);
+    MethodSpec buildFunction(AbiDefinition functionDefinition, TypeSpec.Builder classBuilder) throws ClassNotFoundException {
+        return buildFunction(functionDefinition, true, classBuilder);
     }
 
-    MethodSpec buildFunction(AbiDefinition functionDefinition, boolean useUpperCase)
+    MethodSpec buildFunction(AbiDefinition functionDefinition, boolean useUpperCase, TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
-        return buildFunctions(functionDefinition, useUpperCase).get(0);
+        return buildFunctions(functionDefinition, useUpperCase, classBuilder).get(0);
     }
 
-    List<MethodSpec> buildFunctions(AbiDefinition functionDefinition)
+    List<MethodSpec> buildFunctions(AbiDefinition functionDefinition, TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
-        return buildFunctions(functionDefinition, true);
+        return buildFunctions(functionDefinition, true, classBuilder);
     }
 
-    List<MethodSpec> buildFunctions(AbiDefinition functionDefinition, boolean useUpperCase)
+    List<MethodSpec> buildFunctions(AbiDefinition functionDefinition, boolean useUpperCase, TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
 
         List<MethodSpec> results = new ArrayList<>(2);
@@ -956,7 +961,7 @@ public class SolidityFunctionWrapper extends Generator {
         MethodSpec.Builder methodBuilder =
                 MethodSpec.methodBuilder(functionName).addModifiers(Modifier.PUBLIC);
 
-        final String inputParams = addParameters(methodBuilder, functionDefinition.getInputs());
+        final String inputParams = addParameters(methodBuilder, functionDefinition.getInputs(), classBuilder);
         final List<TypeName> outputParameterTypes =
                 buildTypeNames(functionDefinition.getOutputs(), useJavaPrimitiveTypes);
 
@@ -968,14 +973,15 @@ public class SolidityFunctionWrapper extends Generator {
                         methodBuilder,
                         outputParameterTypes,
                         inputParams,
-                        useUpperCase);
+                        useUpperCase,
+                        classBuilder);
 
                 results.add(methodBuilder.build());
             }
             if (generateSendTxForCalls) {
                 AbiDefinition sendFuncDefinition = new AbiDefinition(functionDefinition);
                 sendFuncDefinition.setConstant(false);
-                results.addAll(buildFunctions(sendFuncDefinition));
+                results.addAll(buildFunctions(sendFuncDefinition, classBuilder));
             }
         }
 
@@ -992,7 +998,8 @@ public class SolidityFunctionWrapper extends Generator {
             MethodSpec.Builder methodBuilder,
             List<TypeName> outputParameterTypes,
             String inputParams,
-            boolean useUpperCase)
+            boolean useUpperCase,
+            TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
 
         String functionName = functionDefinition.getName();
@@ -1006,9 +1013,9 @@ public class SolidityFunctionWrapper extends Generator {
             TypeName typeName = outputParameterTypes.get(0);
             TypeName nativeReturnTypeName;
             if (useNativeJavaTypes) {
-                nativeReturnTypeName = getWrapperRawType(typeName);
+                nativeReturnTypeName = getWrapperRawType(typeName, classBuilder);
             } else {
-                nativeReturnTypeName = getWrapperType(typeName);
+                nativeReturnTypeName = getWrapperType(typeName, classBuilder);
             }
             methodBuilder.returns(buildRemoteFunctionCall(nativeReturnTypeName));
 
@@ -1079,7 +1086,7 @@ public class SolidityFunctionWrapper extends Generator {
                 methodBuilder.addStatement("return executeRemoteCallSingleValueReturn(function)");
             }
         } else {
-            List<TypeName> returnTypes = buildReturnTypes(outputParameterTypes);
+            List<TypeName> returnTypes = buildReturnTypes(outputParameterTypes, classBuilder);
 
             ParameterizedTypeName parameterizedTupleType =
                     ParameterizedTypeName.get(
@@ -1149,7 +1156,8 @@ public class SolidityFunctionWrapper extends Generator {
     TypeSpec buildEventResponseObject(
             String className,
             List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> indexedParameters,
-            List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> nonIndexedParameters) {
+            List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> nonIndexedParameters,
+            TypeSpec.Builder classBuilder) {
 
         TypeSpec.Builder builder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.PUBLIC, Modifier.STATIC);
@@ -1157,13 +1165,13 @@ public class SolidityFunctionWrapper extends Generator {
         builder.superclass(BaseEventResponse.class);
         for (org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName namedType :
                 indexedParameters) {
-            TypeName typeName = getIndexedEventWrapperType(namedType.typeName);
+            TypeName typeName = getIndexedEventWrapperType(namedType.typeName, classBuilder);
             builder.addField(typeName, namedType.getName(), Modifier.PUBLIC);
         }
 
         for (org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName namedType :
                 nonIndexedParameters) {
-            TypeName typeName = getWrapperType(namedType.typeName);
+            TypeName typeName = getWrapperType(namedType.typeName, classBuilder);
             builder.addField(typeName, namedType.getName(), Modifier.PUBLIC);
         }
 
@@ -1174,7 +1182,8 @@ public class SolidityFunctionWrapper extends Generator {
             String responseClassName,
             String functionName,
             List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> indexedParameters,
-            List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> nonIndexedParameters)
+            List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> nonIndexedParameters,
+            TypeSpec.Builder classBuilder)
             throws ClassNotFoundException {
 
         String generatedFunctionName = Strings.lowercaseFirstLetter(functionName) + "EventFlowable";
@@ -1214,7 +1223,8 @@ public class SolidityFunctionWrapper extends Generator {
                                                         "typedResponse",
                                                         indexedParameters,
                                                         nonIndexedParameters,
-                                                        true))
+                                                        true,
+                                                        classBuilder))
                                         .addStatement("return typedResponse")
                                         .build())
                         .build();
@@ -1259,7 +1269,8 @@ public class SolidityFunctionWrapper extends Generator {
             String responseClassName,
             String functionName,
             List<NamedTypeName> indexedParameters,
-            List<NamedTypeName> nonIndexedParameters) {
+            List<NamedTypeName> nonIndexedParameters,
+            TypeSpec.Builder classBuilder) {
 
         ParameterizedTypeName parameterizedTypeName =
                 ParameterizedTypeName.get(
@@ -1290,7 +1301,11 @@ public class SolidityFunctionWrapper extends Generator {
                 .addStatement("$1T typedResponse = new $1T()", ClassName.get("", responseClassName))
                 .addCode(
                         buildTypedResponse(
-                                "typedResponse", indexedParameters, nonIndexedParameters, false))
+                                "typedResponse",
+                                indexedParameters,
+                                nonIndexedParameters,
+                                false,
+                                classBuilder))
                 .addStatement("responses.add(typedResponse)")
                 .endControlFlow();
 
@@ -1327,16 +1342,16 @@ public class SolidityFunctionWrapper extends Generator {
 
         classBuilder.addType(
                 buildEventResponseObject(
-                        responseClassName, indexedParameters, nonIndexedParameters));
+                        responseClassName, indexedParameters, nonIndexedParameters, classBuilder));
 
         List<MethodSpec> methods = new ArrayList<>();
         methods.add(
                 buildEventTransactionReceiptFunction(
-                        responseClassName, functionName, indexedParameters, nonIndexedParameters));
+                        responseClassName, functionName, indexedParameters, nonIndexedParameters, classBuilder));
 
         methods.add(
                 buildEventFlowableFunction(
-                        responseClassName, functionName, indexedParameters, nonIndexedParameters));
+                        responseClassName, functionName, indexedParameters, nonIndexedParameters, classBuilder));
         methods.add(buildDefaultEventFlowableFunction(responseClassName, functionName));
         return methods;
     }
@@ -1345,7 +1360,8 @@ public class SolidityFunctionWrapper extends Generator {
             String objectName,
             List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> indexedParameters,
             List<org.web3j.codegen.SolidityFunctionWrapper.NamedTypeName> nonIndexedParameters,
-            boolean flowable) {
+            boolean flowable,
+            TypeSpec.Builder classBuilder) {
         String nativeConversion;
 
         if (useNativeJavaTypes) {
@@ -1365,7 +1381,7 @@ public class SolidityFunctionWrapper extends Generator {
                     "$L.$L = ($T) eventValues.getIndexedValues().get($L)" + nativeConversion,
                     objectName,
                     indexedParameters.get(i).getName(),
-                    getIndexedEventWrapperType(indexedParameters.get(i).getTypeName()),
+                    getIndexedEventWrapperType(indexedParameters.get(i).getTypeName(), classBuilder),
                     i);
         }
 
@@ -1374,7 +1390,7 @@ public class SolidityFunctionWrapper extends Generator {
                     "$L.$L = ($T) eventValues.getNonIndexedValues().get($L)" + nativeConversion,
                     objectName,
                     nonIndexedParameters.get(i).getName(),
-                    getWrapperType(nonIndexedParameters.get(i).getTypeName()),
+                    getWrapperType(nonIndexedParameters.get(i).getTypeName(), classBuilder),
                     i);
         }
         return builder.build();
@@ -1412,10 +1428,10 @@ public class SolidityFunctionWrapper extends Generator {
         }
     }
 
-    private List<TypeName> buildReturnTypes(List<TypeName> outputParameterTypes) {
+    private List<TypeName> buildReturnTypes(List<TypeName> outputParameterTypes, TypeSpec.Builder classBuilder) {
         List<TypeName> result = new ArrayList<>(outputParameterTypes.size());
         for (TypeName typeName : outputParameterTypes) {
-            result.add(getWrapperType(typeName));
+            result.add(getWrapperType(typeName, classBuilder));
         }
         return result;
     }

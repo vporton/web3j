@@ -127,13 +127,13 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
 
     @Test
     public void testGetNativeType() {
-        assertEquals(getNativeType(TypeName.get(Address.class)), (TypeName.get(String.class)));
-        assertEquals(getNativeType(TypeName.get(Uint256.class)), (TypeName.get(BigInteger.class)));
-        assertEquals(getNativeType(TypeName.get(Int256.class)), (TypeName.get(BigInteger.class)));
-        assertEquals(getNativeType(TypeName.get(Utf8String.class)), (TypeName.get(String.class)));
-        assertEquals(getNativeType(TypeName.get(Bool.class)), (TypeName.get(Boolean.class)));
-        assertEquals(getNativeType(TypeName.get(Bytes32.class)), (TypeName.get(byte[].class)));
-        assertEquals(getNativeType(TypeName.get(DynamicBytes.class)), (TypeName.get(byte[].class)));
+        assertEquals(getNativeType(TypeName.get(Address.class), null), (TypeName.get(String.class)));
+        assertEquals(getNativeType(TypeName.get(Uint256.class), null), (TypeName.get(BigInteger.class)));
+        assertEquals(getNativeType(TypeName.get(Int256.class), null), (TypeName.get(BigInteger.class)));
+        assertEquals(getNativeType(TypeName.get(Utf8String.class), null), (TypeName.get(String.class)));
+        assertEquals(getNativeType(TypeName.get(Bool.class), null), (TypeName.get(Boolean.class)));
+        assertEquals(getNativeType(TypeName.get(Bytes32.class), null), (TypeName.get(byte[].class)));
+        assertEquals(getNativeType(TypeName.get(DynamicBytes.class), null), (TypeName.get(byte[].class)));
     }
 
     @Test
@@ -141,7 +141,8 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
         assertEquals(
                 getNativeType(
                         ParameterizedTypeName.get(
-                                ClassName.get(DynamicArray.class), TypeName.get(Address.class))),
+                                ClassName.get(DynamicArray.class), TypeName.get(Address.class)),
+                        null),
                 (ParameterizedTypeName.get(ClassName.get(List.class), TypeName.get(String.class))));
     }
 
@@ -149,13 +150,13 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
     public void testGetNativeTypeInvalid() {
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> getNativeType(TypeName.get(BigInteger.class)));
+                () -> getNativeType(TypeName.get(BigInteger.class), null));
     }
 
     @Test
     public void testGetEventNativeType() {
         assertEquals(
-                getEventNativeType(TypeName.get(Utf8String.class)), (TypeName.get(byte[].class)));
+                getEventNativeType(TypeName.get(Utf8String.class), null), (TypeName.get(byte[].class)));
     }
 
     @Test
@@ -163,7 +164,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
         assertEquals(
                 getEventNativeType(
                         ParameterizedTypeName.get(
-                                ClassName.get(DynamicArray.class), TypeName.get(Address.class))),
+                                ClassName.get(DynamicArray.class), TypeName.get(Address.class)), null),
                 (TypeName.get(byte[].class)));
     }
 
@@ -178,7 +179,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<org.web3j.protocol.core.methods.response.TransactionReceipt> functionName(java.math.BigInteger param) {\n"
@@ -203,7 +204,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        solidityFunctionWrapper.buildFunction(functionDefinition);
+        solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         verify(generationReporter)
                 .report(
@@ -222,7 +223,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         true);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<org.web3j.protocol.core.methods.response.TransactionReceipt> functionName(java.math.BigInteger param, java.math.BigInteger weiValue) {\n"
@@ -247,7 +248,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<java.math.BigInteger> functionName(java.math.BigInteger param) {\n"
@@ -271,7 +272,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<java.util.List> functionName(java.math.BigInteger param) {\n"
@@ -303,7 +304,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<java.util.List> functionName(java.util.List<java.math.BigInteger> param) {\n"
@@ -337,7 +338,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<java.util.List> functionName(java.util.List<java.util.List<java.math.BigInteger>> param) {\n"
@@ -372,7 +373,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        List<MethodSpec> methodSpecs = solidityFunctionWrapper.buildFunctions(functionDefinition);
+        List<MethodSpec> methodSpecs = solidityFunctionWrapper.buildFunctions(functionDefinition, null);
         assertTrue(methodSpecs.isEmpty());
     }
 
@@ -392,7 +393,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         "type",
                         false);
 
-        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition);
+        MethodSpec methodSpec = solidityFunctionWrapper.buildFunction(functionDefinition, null);
 
         String expected =
                 "public org.web3j.protocol.core.RemoteFunctionCall<org.web3j.tuples.generated.Tuple2<java.math.BigInteger, java.math.BigInteger>> functionName(java.math.BigInteger param1, java.math.BigInteger param2) {\n"
