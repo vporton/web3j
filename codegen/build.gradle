@@ -12,4 +12,4 @@ dependencies {
 }
 
 apply plugin:'application'
-mainClassName = project.getProperty("mainClass")
+mainClassName = project.hasProperty("mainClass") ? project.getProperty("mainClass") : "org.web3j.codegen.SolidityFunctionWrapperGenerator"
