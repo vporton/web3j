@@ -47,12 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.Event;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.StaticArray;
-import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.*;
 import org.web3j.abi.datatypes.primitive.Byte;
 import org.web3j.abi.datatypes.primitive.Char;
 import org.web3j.abi.datatypes.primitive.Double;
@@ -721,8 +716,16 @@ public class SolidityFunctionWrapper extends Generator {
 
         for (ParameterSpec parameterSpec : inputParameterTypes) {
             TypeName typeName = getWrapperType(parameterSpec.type, classBuilder);
+            String subclassName = null;
+            if (parameterSpec.type.toString() == "Tuple") { // FIXME: correct?
+                subclassName = "XXX"; // FIXME: generate a unique name
+                TypeSpec subclass = TypeSpec.classBuilder("XXX")
+                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                        .build();
+                classBuilder.addType(subclass);
+            }
             nativeInputParameterTypes.add(
-                    ParameterSpec.builder(typeName, parameterSpec.name).build());
+                    ParameterSpec.builder(typeName, subclassName != null ? subclassName : parameterSpec.name).build());
         }
 
         methodBuilder.addParameters(nativeInputParameterTypes);
