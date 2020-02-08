@@ -720,7 +720,7 @@ public class SolidityFunctionWrapper extends Generator {
         for (ParameterSpec parameterSpec : inputParameterTypes) {
             TypeName typeName = getWrapperType(parameterSpec.type, classBuilder);
             String subclassName = null;
-            if (parameterSpec.type.toString() == "Tuple") { // FIXME: correct?
+            if (parameterSpec.type.toString().equals("org.web3j.abi.datatypes.Tuple")) { // TODO: String comparison is a hack.
                 subclassName = "XXX"; // FIXME: generate a unique name
                 TypeSpec subclass =
                         TypeSpec.classBuilder("XXX")
@@ -859,6 +859,8 @@ public class SolidityFunctionWrapper extends Generator {
             return TypeName.get(java.lang.Short.class);
         } else if (simpleName.startsWith("Int")) {
             return TypeName.get(BigInteger.class);
+        } else if (simpleName.startsWith("Tuple")) {
+            return TypeName.get(Tuple.class); // no native type, return itself
         } else {
             throw new UnsupportedOperationException(
                     "Unsupported type: " + typeName + ", no native type mapping exists.");
