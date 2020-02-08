@@ -21,7 +21,7 @@ public class Tuple implements Type<List<Type>> {
     public static final String TYPE_NAME = "tuple";
     public static final Tuple DEFAULT = new Tuple();
 
-    private List<Type> value;
+    public List<Type> value;
 
     public Tuple() {
         this.value = new Vector<Type>();

@@ -14,20 +14,10 @@ package org.web3j.abi;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.Vector;
 
-import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.Array;
-import org.web3j.abi.datatypes.Bool;
-import org.web3j.abi.datatypes.Bytes;
-import org.web3j.abi.datatypes.BytesType;
-import org.web3j.abi.datatypes.DynamicArray;
-import org.web3j.abi.datatypes.DynamicBytes;
-import org.web3j.abi.datatypes.NumericType;
-import org.web3j.abi.datatypes.StaticArray;
-import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.Ufixed;
-import org.web3j.abi.datatypes.Uint;
-import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.*;
+import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.primitive.PrimitiveType;
 import org.web3j.utils.Numeric;
 
@@ -43,6 +33,12 @@ public class TypeEncoder {
     private TypeEncoder() {}
 
     static boolean isDynamic(Type parameter) {
+        if (parameter instanceof Tuple) {
+            for (Type element : ((Tuple) parameter).value) {
+                if (isDynamic(parameter)) return true;
+            }
+            return false;
+        }
         return parameter instanceof DynamicBytes
                 || parameter instanceof Utf8String
                 || parameter instanceof DynamicArray;
@@ -68,6 +64,8 @@ public class TypeEncoder {
             return encodeDynamicArray((DynamicArray) parameter);
         } else if (parameter instanceof PrimitiveType) {
             return encode(((PrimitiveType) parameter).toSolidityType());
+        } else if (parameter instanceof Tuple) {
+            return encodeTuple((Tuple) parameter);
         } else {
             throw new UnsupportedOperationException(
                     "Type cannot be encoded: " + parameter.getClass());
@@ -204,5 +202,34 @@ public class TypeEncoder {
             }
         }
         return result.toString();
+    }
+
+    private static String encodeTuple(Tuple value) {
+        if (isDynamic(value)) {
+            Vector<Long> offsets = new Vector<Long>();
+            StringBuffer tail = new StringBuffer();
+            for (Type element : value.value) {
+                offsets.addElement((long)tail.length());
+                tail.append(encode(element)); // recursion
+            }
+            StringBuffer head = new StringBuffer();
+            long additionalOffset = offsets.size() * 32;
+            for (Long offset : offsets) {
+                long fullOffset = offset.longValue() + additionalOffset;
+                head.append(encodeNumeric(new Uint256(new BigInteger(Long.toString(fullOffset)))));
+            }
+            return head.toString().concat(tail.toString());
+        } else {
+            StringBuffer buf = new StringBuffer();
+            for (Type element : value.value) {
+                buf.append(pad32(encode(element))); // recursion
+            }
+            return buf.toString();
+        }
+    }
+
+    private static String pad32(String value) {
+        int remainder = value.length() % 32;
+        return remainder == 0 ? value : new String(new char[32 - remainder]) + value;
     }
 }
